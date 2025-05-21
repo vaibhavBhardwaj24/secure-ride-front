@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import axios from "axios";
-import React, { use } from "react";
+import React from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 interface UserDTO {

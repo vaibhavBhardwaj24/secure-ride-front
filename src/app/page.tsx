@@ -69,6 +69,7 @@ export default function Home() {
         setLoading(false);
       }
     } catch (error) {
+      console.log(error);
       toast.error("Failed to load vehicles");
       setLoading(false);
     }
@@ -98,6 +99,7 @@ export default function Home() {
         setPhoneNumber(null);
       }
     } catch (error) {
+      console.log(error);
       toast.error("Failed to add vehicle");
     } finally {
       setSubmitting(false);
