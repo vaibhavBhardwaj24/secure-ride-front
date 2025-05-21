@@ -1,4 +1,5 @@
 "use client";
+import { setCookie } from "cookies-next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,7 +47,11 @@ export function LoginForm({
         toast("Login successful");
         console.log("Login successful");
         const data = response.data as LoginResponseDTO;
-        document.cookie = `username=${data.user.username}; path=/; max-age=86400`;
+        setCookie("username", `${data.user.username}`, {
+          maxAge: 60 * 60 * 24, // 1 day
+          path: "/",
+        });
+
         navi.push("/");
       } else if (response.status == 401) {
         toast("Wrong username or password");

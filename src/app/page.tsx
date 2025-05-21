@@ -27,12 +27,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-const getCookie = (name: string): string | null => {
-  const match = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith(`${name}=`));
-  return match ? decodeURIComponent(match.split("=")[1]) : null;
-};
+import { getCookie, deleteCookie } from "cookies-next";
+// const getCookie = (name: string): string | null => {
+//   const match = document.cookie
+//     .split("; ")
+//     .find((row) => row.startsWith(`${name}=`));
+//   return match ? decodeURIComponent(match.split("=")[1]) : null;
+// };
 
 export interface VehicleDto {
   _id: string;
@@ -227,7 +228,7 @@ function Navbar() {
         variant="destructive"
         size="sm"
         onClick={() => {
-          localStorage.removeItem("username");
+          deleteCookie("username");
           router.push("/login");
         }}
       >
