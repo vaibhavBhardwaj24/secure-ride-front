@@ -11,16 +11,15 @@ import {
   Phone,
   PlusCircle,
   Sparkles,
+  Clock,
+  ArrowRight,
+  X,
+  Calendar,
+  User,
 } from "lucide-react";
 
 import { getCookie, deleteCookie } from "cookies-next";
 import { useRouter } from "next/navigation";
-// const getCookie = (name: string): string | null => {
-//   const match = document.cookie
-//     .split("; ")
-//     .find((row) => row.startsWith(`${name}=`));
-//   return match ? decodeURIComponent(match.split("=")[1]) : null;
-// };
 
 export interface VehicleDto {
   _id: string;
@@ -37,6 +36,28 @@ export interface VehiclesResponseDto {
   Number: VehicleDto[];
 }
 
+export interface CallLog {
+  _id: string;
+  CallSid: string;
+  CallFrom: string;
+  CallTo: string;
+  Direction: string;
+  Created: string;
+  DialCallDuration: number;
+  StartTime: string;
+  EndTime: string;
+  CallType: string;
+  vehicleNumber: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
+export interface CallLogsResponse {
+  message: string;
+  logs: CallLog[];
+}
+
 export default function Home() {
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -44,6 +65,12 @@ export default function Home() {
   const [submitting, setSubmitting] = useState(false);
   const [data, setData] = useState<VehiclesResponseDto | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [logsModalOpen, setLogsModalOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<VehicleDto | null>(
+    null
+  );
+  const [callLogs, setCallLogs] = useState<CallLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
   const username = getCookie("username");
   const qrRef = useRef<HTMLCanvasElement>(null);
 
@@ -65,6 +92,48 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  const fetchCallLogs = async (vehicle: VehicleDto) => {
+    try {
+      setLogsLoading(true);
+      // Dummy API call - replace with actual endpoint
+      const res = await axios.post("https://secure-ride-lime.vercel.app/logs", {
+        vehicleNumber: vehicle.FullVehicleNumber,
+      });
+
+
+      setCallLogs(res.data.logs);
+      setLogsLoading(false);
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to load call logs");
+      setLogsLoading(false);
+    }
+  };
+
+  const handleVehicleClick = (vehicle: VehicleDto) => {
+    setSelectedVehicle(vehicle);
+    setLogsModalOpen(true);
+    fetchCallLogs(vehicle);
+  };
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+
+  const day = date.getUTCDate().toString().padStart(2, '0');
+  const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+  const year = date.getUTCFullYear();
+
+  let hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+  const seconds = date.getUTCSeconds().toString().padStart(2, '0');
+
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12; // Convert 0 to 12 for 12 AM
+
+  const hours12 = hours.toString().padStart(2, '0');
+
+  return `${day}/${month}/${year} ${hours12}:${minutes}:${seconds} ${ampm}`;
+};
 
   const submit = async () => {
     if (!vehicleNumber || !phoneNumber) {
@@ -96,6 +165,7 @@ export default function Home() {
       setSubmitting(false);
     }
   };
+
   const downloadQR = () => {
     const canvas = qrRef.current;
     if (!canvas) return;
@@ -109,6 +179,7 @@ export default function Home() {
     link.download = "vehicle-qr-code.png";
     link.click();
   };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -151,7 +222,8 @@ export default function Home() {
                     Registered Vehicles
                   </h2>
                   <p className="text-gray-600">
-                    View and manage your vehicle registrations
+                    View and manage your vehicle registrations. Click on a
+                    vehicle to see call logs.
                   </p>
                 </div>
                 <button
@@ -194,7 +266,8 @@ export default function Home() {
                     data.Number.map((vehicle, index) => (
                       <div
                         key={vehicle._id}
-                        className="grid grid-cols-2 gap-4 p-6 bg-white/70 hover:bg-white/90 rounded-2xl border border-gray-200/50 hover:border-emerald-300/50 transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1"
+                        onClick={() => handleVehicleClick(vehicle)}
+                        className="grid grid-cols-2 gap-4 p-6 bg-white/70 hover:bg-white/90 rounded-2xl border border-gray-200/50 hover:border-emerald-300/50 transition-all duration-200 hover:shadow-lg transform hover:-translate-y-1 cursor-pointer group"
                         style={{
                           animationDelay: `${index * 100}ms`,
                           animation: "slideIn 0.5s ease-out forwards",
@@ -208,13 +281,16 @@ export default function Home() {
                             {vehicle.FullVehicleNumber}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-cyan-400 to-emerald-400 rounded-full flex items-center justify-center">
-                            <Phone className="h-5 w-5 text-white hidden md:block" />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-r from-cyan-400 to-emerald-400 rounded-full flex items-center justify-center">
+                              <Phone className="h-5 w-5 text-white hidden md:block" />
+                            </div>
+                            <span className="text-lg text-gray-700">
+                              {vehicle.number}
+                            </span>
                           </div>
-                          <span className="text-lg text-gray-700">
-                            {vehicle.number}
-                          </span>
+                          <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-emerald-500 transition-colors" />
                         </div>
                       </div>
                     ))
@@ -284,7 +360,7 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Dialog Modal */}
+      {/* Add Vehicle Dialog Modal */}
       {dialogOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden transform scale-100 transition-transform">
@@ -355,6 +431,108 @@ export default function Home() {
         </div>
       )}
 
+      {/* Call Logs Modal */}
+      {logsModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden transform scale-100 transition-transform">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Call Logs</h3>
+                <p className="text-blue-100">
+                  Vehicle: {selectedVehicle?.FullVehicleNumber}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setLogsModalOpen(false);
+                  setSelectedVehicle(null);
+                  setCallLogs([]);
+                }}
+                className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {logsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-20 bg-gradient-to-r from-blue-100 to-purple-100 rounded-2xl animate-pulse"
+                    />
+                  ))}
+                </div>
+              ) : callLogs.length > 0 ? (
+                <div className="space-y-4">
+                  {callLogs.map((log, index) => (
+                    <div
+                      key={log._id}
+                      className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-2xl border border-blue-200/50 hover:border-blue-300/50 transition-all duration-200 hover:shadow-md"
+                      style={{
+                        animationDelay: `${index * 100}ms`,
+                        animation: "slideIn 0.5s ease-out forwards",
+                      }}
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+                            <Phone className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">From</p>
+                            <p className="font-semibold text-gray-800">
+                              {log.CallFrom}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full flex items-center justify-center">
+                            <User className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">To</p>
+                            <p className="font-semibold text-gray-800">
+                              {log.CallTo}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-red-500 rounded-full flex items-center justify-center">
+                            <Calendar className="h-5 w-5 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-500">Time</p>
+                            <p className="font-semibold text-gray-800 text-sm">
+                              {formatDate(log.Created)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16 bg-gradient-to-r from-gray-50/50 to-blue-50/50 rounded-2xl border-2 border-dashed border-gray-200">
+                  <Phone className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-xl text-gray-500 mb-2">
+                    No call logs found
+                  </p>
+                  <p className="text-gray-400">
+                    No calls have been made to this vehicle yet
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         @keyframes slideIn {
           from {
@@ -370,6 +548,7 @@ export default function Home() {
     </div>
   );
 }
+
 function Navbar() {
   const navi = useRouter();
   return (
