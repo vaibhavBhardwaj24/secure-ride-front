@@ -11,7 +11,7 @@ import {
   Phone,
   PlusCircle,
   Sparkles,
-  Clock,
+  
   ArrowRight,
   X,
   Calendar,
